@@ -1,81 +1,65 @@
-# plate-censor
+# License Plate Censor
 
-A CLI tool to detect and censor license plates in images using YOLO object detection.
+A web application that automatically detects and censors license plates in MP4 videos using YOLOv8.
 
 ## Features
 
-- Automatic license plate detection using YOLOv8
-- Three censoring methods: gaussian blur, pixelate, or black fill
-- Process single images or entire directories
-- Recursive directory processing
-- Configurable detection confidence and blur strength
-- Adjustable padding around detected plates
+- Drag-and-drop video upload
+- Uses YOLOv8 model trained specifically for license plate detection
+- Processes videos frame-by-frame with real-time progress tracking
+- Download censored videos directly from browser
+- Fully local - no cloud services required
+- GPU acceleration when available, falls back to CPU
+- Modern web UI built with plain HTML/CSS/JavaScript (no frameworks)
 
-## Installation
+## Requirements
+
+- Python 3.10+
+- [uv](https://docs.astral.sh/uv/) package manager
+- wget (for model download)
+
+## Setup
 
 ```bash
-pip install -e .
+./bin/init.sh
 ```
 
-The YOLO model is automatically downloaded from [HuggingFace](https://huggingface.co/nickmuchi/yolov8n-licence-plate-detection) on first use.
+This will:
+1. Create a virtual environment
+2. Install dependencies (FastAPI, uvicorn, ultralytics, opencv-python, torch)
+3. Download the license plate detection model (~6MB)
 
 ## Usage
 
 ```bash
-plate-censor INPUT [OPTIONS]
+./bin/run.sh
 ```
 
-### Arguments
+Then open http://localhost:8000 in your browser.
 
-| Argument | Description |
-|----------|-------------|
-| `INPUT` | Image file or directory to process (required) |
+1. Drag and drop an MP4 video onto the upload area (or click to browse)
+2. Wait for processing to complete with real-time progress updates
+3. Click "Download Censored Video" when complete
 
-### Options
+## Project Structure
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-o, --output` | auto | Output path (file or directory) |
-| `-m, --method` | `gaussian` | Censoring method: `gaussian`, `pixelate`, or `black` |
-| `-s, --strength` | `15` | Blur radius or pixel block size |
-| `-c, --confidence` | `0.5` | Detection confidence threshold (0.0-1.0) |
-| `-p, --padding` | `0.1` | Padding around plates as percentage (0.1 = 10%) |
-| `-r, --recursive` | off | Process subdirectories recursively |
-
-### Examples
-
-```bash
-# Process a single image with default settings
-plate-censor photo.jpg
-
-# Specify output path and use pixelate method
-plate-censor photo.jpg -o censored.jpg -m pixelate
-
-# Process directory recursively with lower confidence threshold
-plate-censor photos/ -r -c 0.3
-
-# Strong gaussian blur with extra padding
-plate-censor photo.jpg -s 30 -p 0.2
-
-# Black out plates completely
-plate-censor photo.jpg -m black
+```
+plate-censor/
+├── bin/
+│   ├── init.sh              # One-time setup
+│   └── run.sh               # Run the web server
+├── static/
+│   └── index.html           # Web UI
+├── models/
+│   └── license_plate_detector.pt
+├── main.py                  # FastAPI server
+├── censor.py                # Video processing logic
+└── requirements.txt
 ```
 
-### Default Output Naming
+## How It Works
 
-When `-o` is not specified:
-- Single image: `photo.jpg` → `photo_censored.jpg`
-- Directory: `photos/` → `photos_censored/`
-
-## Requirements
-
-- Python 3.8+
-- ultralytics
-- huggingface-hub
-- Pillow
-- click
-- numpy
-
-## License
-
-MIT
+1. Each frame is processed through a YOLOv8 model trained for license plate detection
+2. Detected plates are covered with solid black rectangles (with padding for full coverage)
+3. Low confidence threshold (0.25) ensures plates are not missed
+4. Original video properties (resolution, FPS, duration) are preserved
